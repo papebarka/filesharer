@@ -2,13 +2,29 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	_ "strconv"
 )
 
 func home(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Filesharer - Sharing files within your local network"))
+
+	w.Header().Add("Server", "Go")
+
+	ts, err := template.ParseFiles("./ui/html/pages/home.tmpl.html")
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = ts.Execute(w, nil)
+
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func share(w http.ResponseWriter, r *http.Request) {
@@ -35,21 +51,4 @@ func downloadWithID(w http.ResponseWriter, r *http.Request) {
 	fileID := r.PathValue("fileID")
 	msg := fmt.Sprintf("Downloading file %v ....", fileID)
 	w.Write([]byte(msg))
-}
-
-func main() {
-
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /{$}", home)
-	mux.HandleFunc("GET /share", share)
-	mux.HandleFunc("POST /share", createShare)
-	mux.HandleFunc("GET /download", download)
-	mux.HandleFunc("POST /download/{fileID}", downloadWithID)
-
-	log.Print("Starting server on port 5050")
-
-	err := http.ListenAndServe(":5050", mux)
-
-	log.Fatal(err)
 }
